@@ -12,7 +12,7 @@ normalizing_constant = sum(gammas.values())
 gammas = {driver : value / normalizing_constant for driver, value in gammas.items()}
 
 for gamma, player in sorted([(v,k) for k,v in gammas.items()], reverse=True):
-    print("{:<5}{:5.3f}".format(player, gamma))
+    print("{:<5}{:6.4f}".format(player, gamma))
 
 
 
