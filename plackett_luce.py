@@ -50,9 +50,12 @@ def plackett_luce(rankings, tolerance=1e-9, check_assumption=True, normalize=Tru
     Output is a dictionary containing player : plackett_luce_parameter keys
     and values.
     '''
-
     players = set(key for ranking in rankings for key in ranking.keys())
     rankings = [sorted(ranking.keys(),key=ranking.get) for ranking in rankings]
+    if verbose:
+        print('Using native Python implementation of Plackett-Luce.')
+        print('{:,} unique players found.'.format(len(players)))
+        print('{:,} rankings found.'.format(len(rankings)))
     if check_assumption:
         edges = [(source, dest) for ranking in rankings for source, dest in combinations(ranking, 2)]
         scc_count = len(set(scc(edges).values()))
@@ -60,7 +63,7 @@ def plackett_luce(rankings, tolerance=1e-9, check_assumption=True, normalize=Tru
             if scc_count == 1:
                 print ('No disjoint sets found.  Algorithm convergence conditions are met.')
             else:
-                print('%d disjoint sets found.  Algorithm will diverge.'.format(scc_count))
+                print('{:,} disjoint sets found.  Algorithm will diverge.'.format(scc_count))
         if scc_count != 1:
             return None
 
@@ -71,11 +74,10 @@ def plackett_luce(rankings, tolerance=1e-9, check_assumption=True, normalize=Tru
     start = time.perf_counter()
     while gdiff > tolerance:
         _gammas = gammas
-        gamma_sums   =  [[1 / s for s in reversed(list(accumulate(gammas[finisher] for finisher in reversed(ranking))))] for ranking in rankings]
-        gammas = {player : ws[player] / sum(sum(gamma_sum[:min(ranking.index(player) + 1, len(ranking) - 1)])
-                                            for ranking, gamma_sum in zip(rankings, gamma_sums)
-                                                if player in ranking)
-                                            for player in players}
+        gamma_sums   =  [list(accumulate(1 / s for s in reversed(list(accumulate(gammas[finisher] for finisher in reversed(ranking)))))) for ranking in rankings]
+        gammas = {player : ws[player] / sum(gamma_sum[min(ranking.index(player), len(ranking) - 2)]
+                                            for ranking, gamma_sum in zip(rankings, gamma_sums) if player in ranking)
+                    for player in players}
         if normalize:
             gammas = {player : gamma / sum(gammas.values()) for player, gamma in gammas.items()}
         pgdiff = gdiff
@@ -97,6 +99,10 @@ def pl_numpy(rankings, tolerance=1e-9, check_assumption=True, normalize=True, ve
     """
     players = list(set(key for ranking in rankings for key in ranking.keys()))
     rankings = [sorted(ranking.keys(),key=ranking.get) for ranking in rankings]
+    if verbose:
+        print('Using Numpy implementation of Plackett-Luce.')
+        print('{:,} unique players found.'.format(len(players)))
+        print('{:,} rankings found.'.format(len(rankings)))
     if check_assumption:
         edges = [(source, dest) for ranking in rankings for source, dest in combinations(ranking, 2)]
         scc_count = len(set(scc(edges).values()))
